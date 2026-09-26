@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.db.init_db import init_db
-from app.api.routes import health
+from app.api.routes import health,ingest
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -21,3 +21,4 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(ingest.router)
