@@ -1,10 +1,19 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 from app.db.models import File
 
-def compute_churn(file: File)->float:
+def compute_churn(file: File, as_of:datetime | None = None)->float:
+    changes=file.changes
+    if as_of is not None:
+        changes=[c for c in changes if c.commit.committed_at <= as_of]
     return sum(change.lines_added + change.removed_lines for change in file.changes)
 
-def compute_bugfix_ratio(file:File)->float:
+def compute_bugfix_ratio(file:File,as_of:datetime|None=None)->float:
+    changes=file.changes
+    if as_of is not None:
+        changes=[c for c in changes if c.commit.committed_at<=as_of]
+
     total_commits=len(file.changes)
     if total_commits==0:
         return 0.0

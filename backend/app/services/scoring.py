@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.db.models import Score
 from app.services.feature_engineering import compute_all_features
@@ -19,8 +20,8 @@ def normalize(values: list[float])->list[float]:
 
     return [(v-min_val)/(max_val-min_val) for v in values]
 
-def compute_scores(db:Session)->list[dict]:
-    features=compute_all_features(db)
+def compute_scores(db:Session,as_of:datetime|None=None)->list[dict]:
+    features=compute_all_features(db,as_of)
 
     churn_values=[f["churn"] for f in features]
     smell_values=[f["smell_density"] for f in features]
