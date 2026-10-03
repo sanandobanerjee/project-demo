@@ -6,6 +6,6 @@ from app.services.feature_engineering import compute_all_features
 
 router=APIRouter(prefix="/features",tags=["features"])
 
-@router.get(" ")
+@router.get("")
 def get_features(db:Session=Depends(get_db)):
     return compute_all_features(db)

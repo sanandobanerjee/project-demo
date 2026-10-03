@@ -1,14 +1,23 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-from app.db.models import Commit,FileChange
+from app.db.models import Commit,File,FileChange
 from app.services.scoring import compute_scores
 
+
+def _normalize_cutoff(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def get_bugfix_files_after(db:Session,cutoff:datetime)->set[int]:
+    cutoff_utc = _normalize_cutoff(cutoff)
     rows=(
-        db.query(FileChange.file.id)
+        db.query(File.id)
+        .join(FileChange, File.id == FileChange.file_id)
         .join(Commit, FileChange.commit_id == Commit.id)
-        .filter(Commit.committed_at > cutoff, Commit.is_bugfix.is_(True))
+        .filter(Commit.committed_at > cutoff_utc.replace(tzinfo=None), Commit.is_bugfix.is_(True))
         .distinct()
         .all()
     )

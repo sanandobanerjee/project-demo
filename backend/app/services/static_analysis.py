@@ -39,27 +39,27 @@ def analyze_repository(repo_path:str,db:Session)->int:
             if not filename.endswith(".py"):
                 continue
 
-        full_path=os.path.join(root,filename)
-        relative_path=os.path.relpath(full_path,repo_path)
+            full_path=os.path.join(root,filename)
+            relative_path=os.path.relpath(full_path,repo_path)
 
-        try:
-            with open(full_path,"r",encoding="utf-8",errors="ignore") as f:
-                source=f.read()
-        except OSError:
-            continue
+            try:
+                with open(full_path,"r",encoding="utf-8",errors="ignore") as f:
+                    source=f.read()
+            except OSError:
+                continue
 
-        file_row=db.query(File).filter(File.path==relative_path).first()
-        if file_row is None:
-            continue
+            file_row=db.query(File).filter(File.path==relative_path).first()
+            if file_row is None:
+                continue
 
-        for smell_data in analyze_file(source):
-            smell=Smell(
-                file_id=file_row.id,
-                smell_type=smell_data["smell_type"],
-                line_number=smell_data["line_number"]
-            )
-            db.add(smell)
-            smells_created+=1
+            for smell_data in analyze_file(source):
+                smell=Smell(
+                    file_id=file_row.id,
+                    smell_type=smell_data["smell_type"],
+                    line_number=smell_data["line_number"]
+                )
+                db.add(smell)
+                smells_created+=1
 
     db.commit()
     return smells_created

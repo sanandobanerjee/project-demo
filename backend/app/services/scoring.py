@@ -21,21 +21,26 @@ def normalize(values: list[float])->list[float]:
     return [(v-min_val)/(max_val-min_val) for v in values]
 
 def compute_scores(db:Session,as_of:datetime|None=None)->list[dict]:
-    features=compute_all_features(db,as_of)
+    features=compute_all_features(db, as_of=as_of)
 
     churn_values=[f["churn"] for f in features]
+    bugfix_values=[f["bugfix_ratio"] for f in features]
     smell_values=[f["smell_density"] for f in features]
 
     normalized_churn=normalize(churn_values)
+    normalized_bugfix=normalize(bugfix_values)
     normalized_smells=normalize(smell_values)
 
     results=[]
-    for feature,norm_churn,norm_smell in zip(features,normalized_churn,normalized_smells):
+    for feature,norm_churn,norm_bugfix,norm_smell in zip(features,normalized_churn,normalized_bugfix,normalized_smells):
         total_score=(
-            CHURN_WEIGHT*norm_churn + BUGFIX_WEIGHT*feature["bufix_ratio"+SMELL_WEIGHT]*norm_smell)
+            CHURN_WEIGHT*norm_churn +
+            BUGFIX_WEIGHT*norm_bugfix +
+            SMELL_WEIGHT*norm_smell
+        )
 
         results.append({
-            "file.id":feature["file_id"],
+            "file_id":feature["file_id"],
             "path": feature["path"],
             "churn": feature["churn"],
             "bugfix_ratio": feature["bugfix_ratio"],

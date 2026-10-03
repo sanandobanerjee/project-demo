@@ -46,7 +46,7 @@ class Smell(Base):
     id=Column(Integer,primary_key=True,index=True)
     file_id=Column(Integer,ForeignKey("files.id"),nullable=False)
     smell_type=Column(String,nullable=False)
-    line_number=Column(Integer,nullable=False)
+    line_number=Column(Integer,nullable=True)
     detected_at=Column(DateTime,default=datetime.now(timezone.utc))
 
     file=relationship("File",back_populates="smells")
