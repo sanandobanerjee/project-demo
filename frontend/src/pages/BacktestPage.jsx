@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../api.js';
-import { formatPercent } from '../lib/format.js';
+import { useRepos } from '../context/RepoContext.jsx';
+import { formatDate, formatPercent } from '../lib/format.js';
+import RepoPicker from '../components/RepoPicker.jsx';
+import StateMessage from '../components/StateMessage.jsx';
 
 const RESULT_ROWS = [
   { key: 'our_score_hit_rate', label: 'Combined score', note: 'Churn, bug fixes and smells together', strong: true },
@@ -21,6 +25,38 @@ function verdict(r) {
 }
 
 export default function BacktestPage() {
+  const { current, isLoading, error, refetch } = useRepos();
+
+  if (isLoading) return <StateMessage title="Loading…" />;
+
+  if (error) {
+    return (
+      <StateMessage
+        tone="error"
+        title="Couldn't load repositories"
+        action={<button type="button" className="btn btn--secondary" onClick={() => refetch()}>Try again</button>}
+      >
+        {error.message}
+      </StateMessage>
+    );
+  }
+
+  if (!current) {
+    return (
+      <StateMessage
+        title="Nothing to test yet"
+        action={<Link className="btn" to="/analyze">Analyze a repository</Link>}
+      >
+        A backtest replays a repository’s history, so analyze one first.
+      </StateMessage>
+    );
+  }
+
+  // Keyed by repository so a previous result never sits under another repository's name.
+  return <BacktestForm key={current.id} repo={current} />;
+}
+
+function BacktestForm({ repo }) {
   const [cutoff, setCutoff] = useState('');
   const [topPercent, setTopPercent] = useState(10);
   const mutation = useMutation({ mutationFn: api.runBacktest });
@@ -28,7 +64,8 @@ export default function BacktestPage() {
   function submit(e) {
     e.preventDefault();
     if (!cutoff) return;
-    mutation.mutate({ cutoff: new Date(cutoff).toISOString(), topPercent: topPercent / 100 });
+    // The date picker is in the viewer's local time. Send it to the API as UTC.
+    mutation.mutate({ cutoff: new Date(cutoff).toISOString(), topPercent: topPercent / 100, repoId: repo.id });
   }
 
   const result = mutation.data;
@@ -41,6 +78,7 @@ export default function BacktestPage() {
           Pick a date in the past. Debt Scope ranks files using only the history up to that date, then
           checks how many of the files that received bug fixes afterwards landed in your top group.
         </p>
+        <RepoPicker />
       </div>
 
       <form className="form" onSubmit={submit}>
@@ -82,6 +120,9 @@ export default function BacktestPage() {
       {result && (
         <section className="panel panel--pad" aria-labelledby="result-heading">
           <h2 id="result-heading">Results</h2>
+          <p className="muted">
+            {repo.name}, with history up to {formatDate(result.cutoff)}.
+          </p>
           <p className="driver">{verdict(result)}</p>
 
           {result.bugfix_files_after_cutoff > 0 && (

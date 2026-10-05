@@ -11,17 +11,18 @@ def _normalize_cutoff(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def get_bugfix_files_after(db:Session,cutoff:datetime)->set[int]:
+def get_bugfix_files_after(db:Session,cutoff:datetime,repo_id:int|None=None)->set[int]:
     cutoff_utc = _normalize_cutoff(cutoff)
-    rows=(
+    query=(
         db.query(File.id)
         .join(FileChange, File.id == FileChange.file_id)
         .join(Commit, FileChange.commit_id == Commit.id)
         .filter(Commit.committed_at > cutoff_utc.replace(tzinfo=None), Commit.is_bugfix.is_(True))
         .distinct()
-        .all()
     )
-    return {row[0] for row in rows}
+    if repo_id is not None:
+        query=query.filter(File.repo_id==repo_id)
+    return {row[0] for row in query.all()}
 
 def rank_by_total_score(scores:list[dict])->list[int]:
     ranked=sorted(scores,key=lambda s:s["total_score"],reverse=True)
@@ -48,15 +49,16 @@ def top_n_percent_hit_rate(ranked_file_ids: list[int], bugfix_file_ids: set[int]
     return hits / len(bugfix_file_ids)
 
 
-def run_backtest(db: Session, cutoff: datetime, top_percent: float = 0.1) -> dict:
-    scores = compute_scores(db, as_of=cutoff)
-    bugfix_file_ids = get_bugfix_files_after(db, cutoff)
+def run_backtest(db: Session, cutoff: datetime, top_percent: float = 0.1, repo_id: int | None = None) -> dict:
+    scores = compute_scores(db, as_of=cutoff, repo_id=repo_id)
+    bugfix_file_ids = get_bugfix_files_after(db, cutoff, repo_id)
 
     our_ranking = rank_by_total_score(scores)
     smell_baseline = rank_by_smell_only(scores)
     churn_baseline = rank_by_churn_only(scores)
 
     return {
+        "repo_id": repo_id,
         "cutoff": cutoff.isoformat(),
         "top_percent": top_percent,
         "files_considered": len(scores),

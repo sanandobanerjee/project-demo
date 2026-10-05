@@ -40,6 +40,7 @@ export default function Layout() {
             Debt Scope
           </NavLink>
           <nav className="nav" aria-label="Main">
+            <NavLink to="/" end>Overview</NavLink>
             <NavLink to="/analyze">Analyze</NavLink>
             <NavLink to="/files">Files</NavLink>
             <NavLink to="/backtest">Backtest</NavLink>

@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.db.database import Base
-from app.db.models import Commit, File, FileChange, Smell
+from app.db.models import Commit, File, FileChange, Repository, Smell
 from app.services.feature_engineering import compute_all_features, compute_churn
 from app.services.scoring import compute_scores
 
@@ -16,14 +16,23 @@ def build_db():
     return SessionLocal()
 
 
+def add_repo(db, path="/tmp/demo"):
+    repo = Repository(path=path, name=path.rsplit("/", 1)[-1])
+    db.add(repo)
+    db.commit()
+    return repo
+
+
 def test_compute_churn_and_scores_work_for_file_changes():
     db = build_db()
     try:
-        file = File(path="demo.py")
+        repo = add_repo(db)
+        file = File(repo_id=repo.id, path="demo.py")
         db.add(file)
         db.commit()
 
         commit = Commit(
+            repo_id=repo.id,
             hash="abc123",
             message="fix bug in parser",
             author="dev",
@@ -61,7 +70,8 @@ def test_compute_churn_and_scores_work_for_file_changes():
 def test_maintainability_smell_allows_null_line_number_and_aware_cutoff():
     db = build_db()
     try:
-        file = File(path="demo.py")
+        repo = add_repo(db)
+        file = File(repo_id=repo.id, path="demo.py")
         db.add(file)
         db.commit()
 

@@ -1,4 +1,6 @@
 // All backend calls live here. Components never call fetch directly.
+import { normalizePath } from './lib/format.js';
+
 export const API_URL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 
 export class ApiError extends Error {
@@ -41,13 +43,18 @@ async function request(path, options = {}) {
 const post = (path, body) =>
   request(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
 
+// File paths are normalized here once, so every screen sees "a/b/c.py".
+const withCleanPath = (row) => ({ ...row, path: normalizePath(row.path) });
+
 export const api = {
   health: () => request('/health'),
+  repos: () => request('/repos'),
   ingestGit: (repoPath) => post('/ingest/git', { repo_path: repoPath }),
   ingestAnalysis: (repoPath) => post('/ingest/analysis', { repo_path: repoPath }),
-  computeScores: () => post('/scores/compute'),
-  rankedFiles: () => request('/files/ranked'),
-  fileBreakdown: (id) => request(`/files/${id}/breakdown`),
-  runBacktest: ({ cutoff, topPercent }) =>
-    post('/backtest/run', { cutoff, top_percent: topPercent }),
+  computeScores: (repoId) => post(`/scores/compute?repo_id=${repoId}`),
+  rankedFiles: (repoId) =>
+    request(`/files/ranked?repo_id=${repoId}`).then((rows) => rows.map(withCleanPath)),
+  fileBreakdown: (id) => request(`/files/${id}/breakdown`).then(withCleanPath),
+  runBacktest: ({ cutoff, topPercent, repoId }) =>
+    post('/backtest/run', { cutoff, top_percent: topPercent, repo_id: repoId }),
 };

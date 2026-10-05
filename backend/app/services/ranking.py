@@ -1,14 +1,15 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import File,Score
+from app.timeutil import iso_utc
 
-def get_latest_scores(db:Session)->list[dict]:
-    all_scores=(
-        db.query(Score)
-        .join(File,Score.file_id==File.id)
-        .order_by(Score.file_id,Score.computed_at.desc())
-        .all()
-    )
+def get_latest_scores(db:Session,repo_id:int|None=None)->list[dict]:
+    query=db.query(Score).join(File,Score.file_id==File.id)
+    if repo_id is not None:
+        query=query.filter(File.repo_id==repo_id)
+
+    # Newest first per file. The id breaks ties so the most recent run always wins.
+    all_scores=query.order_by(Score.file_id,Score.computed_at.desc(),Score.id.desc()).all()
 
     latest_by_file={}
     for score in all_scores:
@@ -25,7 +26,7 @@ def get_latest_scores(db:Session)->list[dict]:
             "bugfix_ratio": s.bugfix_ratio,
             "smell_density": s.smell_density,
             "total_score": s.total_score,
-            "computed_at": s.computed_at.isoformat()
+            "computed_at": iso_utc(s.computed_at)
         }
         for s in ranked
     ]
@@ -38,19 +39,20 @@ def get_file_breakdown(db:Session,file_id:int)->dict|None:
     latest_score=(
         db.query(Score)
         .filter(Score.file_id==file_id)
-        .order_by(Score.computed_at.desc())
+        .order_by(Score.computed_at.desc(),Score.id.desc())
         .first()
     )
 
     return {
         "file_id": file.id,
+        "repo_id": file.repo_id,
         "path": file.path,
         "score": {
             "churn": latest_score.churn,
             "bugfix_ratio": latest_score.bugfix_ratio,
             "smell_density": latest_score.smell_density,
             "total_score": latest_score.total_score,
-            "computed_at": latest_score.computed_at.isoformat()
+            "computed_at": iso_utc(latest_score.computed_at)
     } if latest_score else None,
     "smells": [
             {

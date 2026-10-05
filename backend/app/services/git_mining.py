@@ -12,23 +12,30 @@ BUGFIX_PATTERN = re.compile(
 def is_bugfix_commit(message:str)->bool:
     return bool(BUGFIX_PATTERN.search(message))
 
-def get_or_create_file(db:Session,path:str)->File:
-    file=db.query(File).filter(File.path==path).first()
+def normalize_path(path:str)->str:
+    # PyDriller returns backslashes on Windows. Store one format everywhere so
+    # the same file always has the same path and the UI can search it.
+    return path.replace("\\","/")
+
+def get_or_create_file(db:Session,path:str,repo_id:int)->File:
+    path=normalize_path(path)
+    file=db.query(File).filter(File.repo_id==repo_id,File.path==path).first()
     if file is None:
-        file=File(path=path)
+        file=File(repo_id=repo_id,path=path)
         db.add(file)
         db.flush()
     return file
 
-def mine_repository(repo_path: str,db:Session)->int:
+def mine_repository(repo_path: str,db:Session,repo_id:int)->int:
     commits_processed=0
 
     for commit in Repository(repo_path).traverse_commits():
-        existing=db.query(Commit).filter(Commit.hash==commit.hash).first()
+        existing=db.query(Commit.id).filter(Commit.repo_id==repo_id,Commit.hash==commit.hash).first()
         if existing is not None:
             continue
 
         commit_row=Commit(
+            repo_id=repo_id,
             hash=commit.hash,
             message=commit.msg,
             author=commit.author.name,
@@ -43,7 +50,7 @@ def mine_repository(repo_path: str,db:Session)->int:
             if path is None:
                 continue
 
-            file_row=get_or_create_file(db,path)
+            file_row=get_or_create_file(db,path,repo_id)
 
             change=FileChange(
                 file_id=file_row.id,

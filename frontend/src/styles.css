@@ -15,7 +15,7 @@
   --ok: #1e8a58;
   --focus: #2f6fed;
 
-  --font-ui: 'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-ui: 'Saira', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 
   --radius: 6px;
@@ -44,7 +44,7 @@ h2 { font-size: 1.25rem; line-height: 1.25; letter-spacing: -0.01em; font-weight
 
 a { color: inherit; }
 code, .mono { font-family: var(--font-mono); font-size: 0.875em; }
-code { background: var(--line-soft); padding: 0.1em 0.35em; border-radius: 3px; }
+code { background: var(--line-soft); padding: 0.1em 0.35em; border-radius: 3px; white-space: nowrap; }
 
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
@@ -274,6 +274,59 @@ th { text-align: left; font-weight: 600; font-size: 0.875rem; color: var(--muted
 .bars-fill--strong { background: var(--ink); }
 .bars-value { font-weight: 600; }
 
+/* ---------- Landing ---------- */
+.stack--loose { gap: 3.5rem; }
+h3 { margin: 0; font-size: 1.0625rem; line-height: 1.3; font-weight: 600; }
+
+.hero { display: flex; flex-direction: column; gap: 1.25rem; padding-top: 1rem; }
+.hero h1 { font-size: 3rem; line-height: 1.08; letter-spacing: -0.03em; max-width: 22ch; text-wrap: balance; }
+.hero .lede { font-size: 1.1875rem; }
+
+/* The memorable element: a score drawn as its three weighted parts. */
+.anatomy { display: flex; width: 100%; height: 3.25rem; border-radius: 6px; overflow: hidden; margin-top: 0.5rem; }
+.anatomy-seg {
+  display: flex; align-items: center; padding: 0 1rem; min-width: 0;
+  color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden;
+}
+.anatomy-seg + .anatomy-seg { border-left: 2px solid var(--bg); }
+/* White on amber is hard to read. */
+.anatomy-seg:last-child { color: var(--ink); }
+
+.anatomy-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 0.5rem; }
+.anatomy-cols li { display: flex; flex-direction: column; gap: 0.35rem; }
+.anatomy-cols .swatch { margin-right: 0.5rem; }
+
+.how { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.how li { display: grid; grid-template-columns: 2.25rem 1fr; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--line); }
+.how-num {
+  width: 2.25rem; height: 2.25rem; border-radius: 50%; display: grid; place-items: center;
+  border: 1.5px solid var(--ink); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.how p { max-width: var(--measure); }
+.how + p { margin-top: 0.25rem; max-width: var(--measure); }
+
+.uses { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; }
+.uses li { display: flex; flex-direction: column; gap: 0.35rem; border-top: 2px solid var(--ink); padding-top: 0.9rem; }
+.uses a { text-underline-offset: 3px; }
+
+/* ---------- Analyze extras ---------- */
+.before { display: flex; flex-direction: column; gap: 0.6rem; max-width: 46rem; }
+.before h2 { font-size: 1.0625rem; }
+.before ul { display: flex; flex-direction: column; gap: 0.5rem; border-left: 3px solid var(--line); padding-left: 1rem; }
+.before li { max-width: var(--measure); }
+
+.notice {
+  max-width: 40rem; padding: 0.8rem 1rem; background: var(--surface);
+  border: 1px solid var(--line); border-left: 3px solid var(--ink); border-radius: var(--radius);
+}
+.notice a { text-underline-offset: 3px; font-weight: 600; }
+
+/* ---------- Repository picker ---------- */
+.repo-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; }
+.repo-picker { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+.repo-picker select { width: auto; min-width: 14rem; max-width: 100%; }
+.repo-path { font-size: 0.8125rem; overflow-wrap: anywhere; }
+
 /* ---------- Small screens ---------- */
 @media (max-width: 720px) {
   h1 { font-size: 1.6rem; }
@@ -289,6 +342,10 @@ th { text-align: left; font-weight: 600; font-size: 0.875rem; color: var(--muted
   .bars li { grid-template-columns: 1fr 3.5rem; }
   .bars-label { grid-column: 1 / -1; }
   .score-big { font-size: 2.75rem; }
+  .hero h1 { font-size: 2.1rem; }
+  .anatomy { height: auto; min-height: 3.25rem; }
+  .anatomy-seg { padding: 0.5rem; font-size: 0.8125rem; white-space: normal; }
+  .anatomy-cols, .uses { grid-template-columns: 1fr; gap: 1.5rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

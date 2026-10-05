@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api.js';
+import { useRepos } from '../context/RepoContext.jsx';
 import { FACTORS, dominantFactor, levelFor, withParts } from '../lib/scoring.js';
 import { describeFactor, describeSmell, formatDate, formatScore, splitPath } from '../lib/format.js';
 import ScoreBar from '../components/ScoreBar.jsx';
@@ -16,12 +17,29 @@ const DRIVER_TEXT = {
 
 export default function FileDetailPage() {
   const { id } = useParams();
+  const { repos, current, selectRepo } = useRepos();
   const detail = useQuery({ queryKey: ['file', id], queryFn: () => api.fileBreakdown(id) });
-  // The ranked list gives us the other files, needed to size each factor's share.
-  const ranked = useQuery({ queryKey: ['ranked'], queryFn: api.rankedFiles });
+
+  // The file knows which repository it belongs to. The ranked list for that
+  // repository is needed to size each factor's share of the score.
+  const repoId = detail.data?.repo_id;
+  const ranked = useQuery({
+    queryKey: ['ranked', repoId],
+    queryFn: () => api.rankedFiles(repoId),
+    enabled: repoId != null,
+  });
+
+  // Opening a file from another repository (a shared link, say) switches the
+  // Files page to that repository too, so "Back" lands in the right place.
+  useEffect(() => {
+    if (repoId == null || current?.id === repoId) return;
+    const repo = repos.find((r) => r.id === repoId);
+    if (repo) selectRepo(repo);
+  }, [repoId, current?.id, repos, selectRepo]);
 
   const rows = useMemo(() => (ranked.data ? withParts(ranked.data) : []), [ranked.data]);
   const row = rows.find((r) => String(r.file_id) === String(id));
+  const repoName = repos.find((r) => r.id === repoId)?.name;
 
   const back = <Link className="backlink" to="/files">Back to all files</Link>;
 
@@ -57,6 +75,7 @@ export default function FileDetailPage() {
           <span className="path-dir">{dir}</span>
           <span className="path-name">{name}</span>
         </h1>
+        {repoName && <p className="muted">in {repoName}</p>}
       </div>
 
       {!score ? (

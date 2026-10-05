@@ -20,8 +20,8 @@ def normalize(values: list[float])->list[float]:
 
     return [(v-min_val)/(max_val-min_val) for v in values]
 
-def compute_scores(db:Session,as_of:datetime|None=None)->list[dict]:
-    features=compute_all_features(db, as_of=as_of)
+def compute_scores(db:Session,as_of:datetime|None=None,repo_id:int|None=None)->list[dict]:
+    features=compute_all_features(db, as_of=as_of, repo_id=repo_id)
 
     churn_values=[f["churn"] for f in features]
     bugfix_values=[f["bugfix_ratio"] for f in features]
@@ -64,7 +64,7 @@ def persist_scores(db:Session,scores:list[dict])->int:
     db.commit()
     return len(scores)
 
-def run_scoring(db:Session)->list[dict]:
-    scores=compute_scores(db)
+def run_scoring(db:Session,repo_id:int|None=None)->list[dict]:
+    scores=compute_scores(db,repo_id=repo_id)
     persist_scores(db,scores)
     return scores

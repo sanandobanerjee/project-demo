@@ -42,6 +42,9 @@ def compute_features(file:File, as_of:datetime|None=None)->dict:
         "smell_density":compute_smell_density(file)
     }
 
-def compute_all_features(db:Session, as_of:datetime|None=None)->list[dict]:
-    files=db.query(File).all()
+def compute_all_features(db:Session, as_of:datetime|None=None, repo_id:int|None=None)->list[dict]:
+    query=db.query(File)
+    if repo_id is not None:
+        query=query.filter(File.repo_id==repo_id)
+    files=query.all()
     return [compute_features(file, as_of=as_of) for file in files]

@@ -28,8 +28,13 @@ def analyze_file(source:str)->list[dict]:
 
     return smells
 
-def analyze_repository(repo_path:str,db:Session)->int:
+def analyze_repository(repo_path:str,db:Session,repo_id:int)->int:
     smells_created=0
+
+    # Replace earlier results for this repository so running the scan again
+    # does not count the same smells twice.
+    repo_file_ids=db.query(File.id).filter(File.repo_id==repo_id)
+    db.query(Smell).filter(Smell.file_id.in_(repo_file_ids)).delete(synchronize_session=False)
 
     for root, _, filenames in os.walk(repo_path):
         if ".git" in root:
@@ -40,7 +45,7 @@ def analyze_repository(repo_path:str,db:Session)->int:
                 continue
 
             full_path=os.path.join(root,filename)
-            relative_path=os.path.relpath(full_path,repo_path)
+            relative_path=os.path.relpath(full_path,repo_path).replace(os.sep,"/")
 
             try:
                 with open(full_path,"r",encoding="utf-8",errors="ignore") as f:
@@ -48,7 +53,7 @@ def analyze_repository(repo_path:str,db:Session)->int:
             except OSError:
                 continue
 
-            file_row=db.query(File).filter(File.path==relative_path).first()
+            file_row=db.query(File).filter(File.repo_id==repo_id,File.path==relative_path).first()
             if file_row is None:
                 continue
 

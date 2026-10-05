@@ -1,14 +1,15 @@
 from fastapi import APIRouter,Depends,HTTPException
 from sqlalchemy.orm import Session
 
+from app.api.deps import resolve_repo_id
 from app.db.database import get_db
 from app.services.ranking import get_file_breakdown,get_latest_scores
 
 router=APIRouter(prefix="/files",tags=["files"])
 
 @router.get("/ranked")
-def ranked_files(db:Session=Depends(get_db)):
-    return get_latest_scores(db)
+def ranked_files(repo_id:int|None=None,db:Session=Depends(get_db)):
+    return get_latest_scores(db,resolve_repo_id(db,repo_id))
 
 @router.get("/{file_id}/breakdown")
 def file_breakdown(file_id:int,db:Session=Depends(get_db)):
